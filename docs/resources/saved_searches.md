@@ -136,6 +136,7 @@ This resource block supports the following arguments:
 * `action_webhook_param_url` - (Optional) URL to send the HTTP POST request to. Must be accessible from the Splunk server
 * `action_better_webhook_param_url` - (Optional) URL for the better_webhook action.
 * `action_better_webhook_param_credential` - (Optional) Credential for the better_webhook action.
+* `action_better_webhook_param_body_format` - (Optional) Body format for webhook notification.
 * `actions` - (Optional) A comma-separated list of actions to enable. For example: rss,email
 * `alert_comparator` - (Optional) One of the following strings: greater than, less than, equal to, rises by, drops by, rises by perc, drops by percUsed with alert_threshold to trigger alert actions.
 * `alert_condition` - (Optional) Contains a conditional search that is evaluated against the results of the saved search. Defaults to an empty string.

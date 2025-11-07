@@ -127,6 +127,7 @@ type SavedSearchObject struct {
 	ActionWebhookParamUrl                        string  `json:"action.webhook.param.url,omitempty" url:"action.webhook.param.url"`
 	ActionBetterWebhookParamCredential           string  `json:"action.better_webhook.param.credential,omitempty" url:"action.better_webhook.param.credential,omitempty"`
 	ActionBetterWebhookParamUrl                  string  `json:"action.better_webhook.param.url,omitempty" url:"action.better_webhook.param.url,omitempty"`
+	ActionBetterWebhookParamBodyFormat           string  `json:"action.better_webhook.param.body_format,omitempty" url:"action.better_webhook.param.body_format,omitempty"`
 	AlertDigestMode                              bool    `json:"alert.digest_mode" url:"alert.digest_mode"`
 	AlertExpires                                 string  `json:"alert.expires,omitempty" url:"alert.expires,omitempty"`
 	AlertSeverity                                int     `json:"alert.severity,omitempty" url:"alert.severity,omitempty"`

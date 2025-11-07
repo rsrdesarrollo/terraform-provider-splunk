@@ -744,6 +744,11 @@ func savedSearches() *schema.Resource {
 				Optional:    true,
 				Description: "Credential for the better_webhook action.",
 			},
+			"action_better_webhook_param_body_format": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Body format for webhook notification.",
+			},
 			"action_better_webhook_param_url": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -1577,6 +1582,9 @@ func savedSearchesRead(d *schema.ResourceData, meta interface{}) error {
 	if err = d.Set("action_better_webhook_param_credential", entry.Content.ActionBetterWebhookParamCredential); err != nil {
 		return err
 	}
+	if err = d.Set("action_better_webhook_param_body_format", entry.Content.ActionBetterWebhookParamBodyFormat); err != nil {
+		return err
+	}
 	if err = d.Set("action_better_webhook_param_url", entry.Content.ActionBetterWebhookParamUrl); err != nil {
 		return err
 	}
@@ -1927,6 +1935,7 @@ func getSavedSearchesConfig(d *schema.ResourceData) (savedSearchesObj *models.Sa
 		ActionJiraServiceDeskParamJiraCustomfields:   d.Get("action_jira_service_desk_param_jira_customfields").(string),
 		ActionWebhookParamUrl:                        d.Get("action_webhook_param_url").(string),
 		ActionBetterWebhookParamCredential:           d.Get("action_better_webhook_param_credential").(string),
+		ActionBetterWebhookParamBodyFormat:           d.Get("action_better_webhook_param_body_format").(string),
 		ActionBetterWebhookParamUrl:                  d.Get("action_better_webhook_param_url").(string),
 		AlertComparator:                              d.Get("alert_comparator").(string),
 		AlertCondition:                               d.Get("alert_condition").(string),

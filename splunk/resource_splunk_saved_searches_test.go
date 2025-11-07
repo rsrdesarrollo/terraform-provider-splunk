@@ -270,6 +270,7 @@ resource "splunk_saved_searches" "test" {
 	actions = "better_webhook"
 	action_better_webhook_param_url = "https://webhook.example.com/endpoint"
 	action_better_webhook_param_credential = "test_credential"
+	action_better_webhook_param_body_format = "{\"sid\": $$sid$$, \"results_link\": $$results_link$$}"
 	alert_comparator    = "greater than"
 	alert_digest_mode   = true
 	alert_expires       = "30d"
@@ -574,6 +575,7 @@ func TestAccSplunkSavedSearches(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "actions", "better_webhook"),
 					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_url", "https://webhook.example.com/endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_credential", "test_credential"),
+					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_body_format", "{\"sid\": $$sid$$, \"results_link\": $$results_link$$}"),
 					resource.TestCheckResourceAttr(resourceName, "alert_comparator", "greater than"),
 					resource.TestCheckResourceAttr(resourceName, "alert_digest_mode", "true"),
 					resource.TestCheckResourceAttr(resourceName, "alert_expires", "30d"),
