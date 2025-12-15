@@ -754,6 +754,43 @@ func savedSearches() *schema.Resource {
 				Optional:    true,
 				Description: "URL for the better_webhook action.",
 			},
+			"action_httpalert_param_credential": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Credential for the HTTP alert action.",
+			},
+			"action_httpalert_param_custom_headers": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Custom headers for the HTTP alert action in key:value format, separated by commas.",
+			},
+			"action_httpalert_param_endpoint": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^https?://[^\s]+$`), "HTTP alert endpoint URL is invalid"),
+				Description:  "Endpoint URL for the HTTP alert action.",
+			},
+			"action_httpalert_param_method": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"get", "post", "put", "delete", "patch"}, false),
+				Description:  "HTTP method for the HTTP alert action (get, post, put, delete, patch).",
+			},
+			"action_httpalert_param_payload": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Payload for the HTTP alert action.",
+			},
+			"action_httpalert_param_qs_params": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Query string parameters for the HTTP alert action in key=value format, separated by &.",
+			},
+			"action_httpalert_param_verify_ssl_certificate": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Whether to verify SSL certificate for the HTTP alert action.",
+			},
 			"alert_digest_mode": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -1588,6 +1625,27 @@ func savedSearchesRead(d *schema.ResourceData, meta interface{}) error {
 	if err = d.Set("action_better_webhook_param_url", entry.Content.ActionBetterWebhookParamUrl); err != nil {
 		return err
 	}
+	if err = d.Set("action_httpalert_param_credential", entry.Content.ActionHttpalertParamCredential); err != nil {
+		return err
+	}
+	if err = d.Set("action_httpalert_param_custom_headers", entry.Content.ActionHttpalertParamCustomHeaders); err != nil {
+		return err
+	}
+	if err = d.Set("action_httpalert_param_endpoint", entry.Content.ActionHttpalertParamEndpoint); err != nil {
+		return err
+	}
+	if err = d.Set("action_httpalert_param_method", entry.Content.ActionHttpalertParamMethod); err != nil {
+		return err
+	}
+	if err = d.Set("action_httpalert_param_payload", entry.Content.ActionHttpalertParamPayload); err != nil {
+		return err
+	}
+	if err = d.Set("action_httpalert_param_qs_params", entry.Content.ActionHttpalertParamQsParams); err != nil {
+		return err
+	}
+	if err = d.Set("action_httpalert_param_verify_ssl_certificate", entry.Content.ActionHttpalertParamVerifySslCertificate); err != nil {
+		return err
+	}
 	if err = d.Set("alert_digest_mode", entry.Content.AlertDigestMode); err != nil {
 		return err
 	}
@@ -1937,6 +1995,13 @@ func getSavedSearchesConfig(d *schema.ResourceData) (savedSearchesObj *models.Sa
 		ActionBetterWebhookParamCredential:           d.Get("action_better_webhook_param_credential").(string),
 		ActionBetterWebhookParamBodyFormat:           d.Get("action_better_webhook_param_body_format").(string),
 		ActionBetterWebhookParamUrl:                  d.Get("action_better_webhook_param_url").(string),
+		ActionHttpalertParamCredential:               d.Get("action_httpalert_param_credential").(string),
+		ActionHttpalertParamCustomHeaders:            d.Get("action_httpalert_param_custom_headers").(string),
+		ActionHttpalertParamEndpoint:                 d.Get("action_httpalert_param_endpoint").(string),
+		ActionHttpalertParamMethod:                   d.Get("action_httpalert_param_method").(string),
+		ActionHttpalertParamPayload:                  d.Get("action_httpalert_param_payload").(string),
+		ActionHttpalertParamQsParams:                 d.Get("action_httpalert_param_qs_params").(string),
+		ActionHttpalertParamVerifySslCertificate:     d.Get("action_httpalert_param_verify_ssl_certificate").(bool),
 		AlertComparator:                              d.Get("alert_comparator").(string),
 		AlertCondition:                               d.Get("alert_condition").(string),
 		AlertDigestMode:                              d.Get("alert_digest_mode").(bool),

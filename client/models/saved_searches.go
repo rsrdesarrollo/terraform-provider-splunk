@@ -128,6 +128,13 @@ type SavedSearchObject struct {
 	ActionBetterWebhookParamCredential           string  `json:"action.better_webhook.param.credential,omitempty" url:"action.better_webhook.param.credential,omitempty"`
 	ActionBetterWebhookParamUrl                  string  `json:"action.better_webhook.param.url,omitempty" url:"action.better_webhook.param.url,omitempty"`
 	ActionBetterWebhookParamBodyFormat           string  `json:"action.better_webhook.param.body_format,omitempty" url:"action.better_webhook.param.body_format,omitempty"`
+	ActionHttpalertParamCredential               string  `json:"action.httpalert.param.credential,omitempty" url:"action.httpalert.param.credential,omitempty"`
+	ActionHttpalertParamCustomHeaders            string  `json:"action.httpalert.param.custom_headers,omitempty" url:"action.httpalert.param.custom_headers,omitempty"`
+	ActionHttpalertParamEndpoint                 string  `json:"action.httpalert.param.endpoint,omitempty" url:"action.httpalert.param.endpoint,omitempty"`
+	ActionHttpalertParamMethod                   string  `json:"action.httpalert.param.method,omitempty" url:"action.httpalert.param.method,omitempty"`
+	ActionHttpalertParamPayload                  string  `json:"action.httpalert.param.payload,omitempty" url:"action.httpalert.param.payload,omitempty"`
+	ActionHttpalertParamQsParams                 string  `json:"action.httpalert.param.qs_params,omitempty" url:"action.httpalert.param.qs_params,omitempty"`
+	ActionHttpalertParamVerifySslCertificate     bool    `json:"action.httpalert.param.verify_ssl_certificate" url:"action.httpalert.param.verify_ssl_certificate"`
 	AlertDigestMode                              bool    `json:"alert.digest_mode" url:"alert.digest_mode"`
 	AlertExpires                                 string  `json:"alert.expires,omitempty" url:"alert.expires,omitempty"`
 	AlertSeverity                                int     `json:"alert.severity,omitempty" url:"alert.severity,omitempty"`
