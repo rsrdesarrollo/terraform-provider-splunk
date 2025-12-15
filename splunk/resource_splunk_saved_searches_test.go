@@ -285,6 +285,31 @@ resource "splunk_saved_searches" "test" {
 }
 `
 
+const newSavedSearchesHttpAlert = `
+resource "splunk_saved_searches" "test" {
+	name = "Test HTTP Alert"
+	actions = "httpalert"
+	action_httpalert_param_endpoint = "https://api.example.com/alerts"
+	action_httpalert_param_method = "post"
+	action_httpalert_param_credential = "http_credential"
+	action_httpalert_param_custom_headers = "Authorization:Bearer token123,Content-Type:application/json"
+	action_httpalert_param_payload = "{\"alert\": \"$name$\", \"severity\": \"high\"}"
+	action_httpalert_param_qs_params = "source=splunk&env=prod"
+	action_httpalert_param_verify_ssl_certificate = true
+	alert_comparator    = "greater than"
+	alert_digest_mode   = true
+	alert_expires       = "30d"
+	alert_threshold     = "0"
+	alert_type          = "number of events"
+	cron_schedule       = "*/1 * * * *"
+	disabled            = false
+	is_scheduled        = true
+	is_visible          = true
+	realtime_schedule   = true
+	search              = "index=main level=error"
+}
+`
+
 const newSavedSearchesReport = `
 resource "splunk_saved_searches" "test" {
     name = "Test Report"
@@ -576,6 +601,31 @@ func TestAccSplunkSavedSearches(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_url", "https://webhook.example.com/endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_credential", "test_credential"),
 					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_body_format", "{\"sid\": $$sid$$, \"results_link\": $$results_link$$}"),
+					resource.TestCheckResourceAttr(resourceName, "alert_comparator", "greater than"),
+					resource.TestCheckResourceAttr(resourceName, "alert_digest_mode", "true"),
+					resource.TestCheckResourceAttr(resourceName, "alert_expires", "30d"),
+					resource.TestCheckResourceAttr(resourceName, "alert_threshold", "0"),
+					resource.TestCheckResourceAttr(resourceName, "alert_type", "number of events"),
+					resource.TestCheckResourceAttr(resourceName, "cron_schedule", "*/1 * * * *"),
+					resource.TestCheckResourceAttr(resourceName, "disabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "is_scheduled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "is_visible", "true"),
+					resource.TestCheckResourceAttr(resourceName, "realtime_schedule", "true"),
+					resource.TestCheckResourceAttr(resourceName, "search", "index=main level=error"),
+				),
+			},
+			{
+				Config: newSavedSearchesHttpAlert,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "Test HTTP Alert"),
+					resource.TestCheckResourceAttr(resourceName, "actions", "httpalert"),
+					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_endpoint", "https://api.example.com/alerts"),
+					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_method", "post"),
+					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_credential", "http_credential"),
+					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_custom_headers", "Authorization:Bearer token123,Content-Type:application/json"),
+					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_payload", "{\"alert\": \"$name$\", \"severity\": \"high\"}"),
+					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_qs_params", "source=splunk&env=prod"),
+					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_verify_ssl_certificate", "true"),
 					resource.TestCheckResourceAttr(resourceName, "alert_comparator", "greater than"),
 					resource.TestCheckResourceAttr(resourceName, "alert_digest_mode", "true"),
 					resource.TestCheckResourceAttr(resourceName, "alert_expires", "30d"),
