@@ -789,6 +789,8 @@ func savedSearches() *schema.Resource {
 			"action_httpalert_param_verify_ssl_certificate": {
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Computed:    true,
+				Default:     false,
 				Description: "Whether to verify SSL certificate for the HTTP alert action.",
 			},
 			"alert_digest_mode": {

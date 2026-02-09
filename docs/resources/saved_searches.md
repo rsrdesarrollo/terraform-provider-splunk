@@ -143,7 +143,7 @@ This resource block supports the following arguments:
 * `action_httpalert_param_method` - (Optional) HTTP method for the HTTP alert action (get, post, put, delete, patch).
 * `action_httpalert_param_payload` - (Optional) Payload for the HTTP alert action.
 * `action_httpalert_param_qs_params` - (Optional) Query string parameters for the HTTP alert action in key=value format, separated by &.
-* `action_httpalert_param_verify_ssl_certificate` - (Optional) Whether to verify SSL certificate for the HTTP alert action.
+* `action_httpalert_param_verify_ssl_certificate` - (Optional) Whether to verify SSL certificate for the HTTP alert action. Defaults to 0 (false).
 * `actions` - (Optional) A comma-separated list of actions to enable. For example: rss,email
 * `alert_comparator` - (Optional) One of the following strings: greater than, less than, equal to, rises by, drops by, rises by perc, drops by percUsed with alert_threshold to trigger alert actions.
 * `alert_condition` - (Optional) Contains a conditional search that is evaluated against the results of the saved search. Defaults to an empty string.
