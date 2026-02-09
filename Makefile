@@ -35,3 +35,15 @@ plan:
 
 apply:
 	@terraform apply -auto-approve
+
+show-version:
+	@echo "Current version: $$(git describe --tags --abbrev=0 2>/dev/null || echo 'v0.0.0')"
+
+bump-patch:
+	@bash scripts/bump-version.sh patch
+
+bump-minor:
+	@bash scripts/bump-version.sh minor
+
+bump-major:
+	@bash scripts/bump-version.sh major
