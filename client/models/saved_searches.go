@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"strings"
 )
@@ -267,10 +268,16 @@ func (s *SavedSearchObject) UnmarshalJSON(data []byte) error {
 
 	type savedSearchObjectAlias SavedSearchObject
 	var alias savedSearchObjectAlias
-	if err := json.Unmarshal(normalized, &alias); err != nil {
-		return err
-	}
-
+	err = json.Unmarshal(normalized, &alias)
 	*s = SavedSearchObject(alias)
-	return nil
+
+	// Splunk returns many numeric fields as JSON strings (e.g. "4"). Those
+	// produce json.UnmarshalTypeError for non-string Go fields. Preserve the
+	// historical lenient behavior by keeping whatever was decoded and ignoring
+	// only type errors, exactly like the default decoder did before.
+	var typeErr *json.UnmarshalTypeError
+	if errors.As(err, &typeErr) {
+		return nil
+	}
+	return err
 }
