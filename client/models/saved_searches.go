@@ -1,5 +1,66 @@
 package models
 
+import (
+	"encoding/json"
+	"reflect"
+	"strings"
+)
+
+func parseSplunkBoolJSON(data []byte) (bool, bool) {
+	switch strings.TrimSpace(string(data)) {
+	case "true", "\"true\"", "1", "\"1\"":
+		return true, true
+	case "false", "\"false\"", "0", "\"0\"", "null", "\"\"":
+		return false, true
+	default:
+		return false, false
+	}
+}
+
+func savedSearchObjectBoolFields() map[string]struct{} {
+	fields := map[string]struct{}{}
+	t := reflect.TypeOf(SavedSearchObject{})
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if field.Type.Kind() != reflect.Bool {
+			continue
+		}
+		tag := field.Tag.Get("json")
+		if tag == "" || tag == "-" {
+			continue
+		}
+		name := strings.Split(tag, ",")[0]
+		if name == "" {
+			continue
+		}
+		fields[name] = struct{}{}
+	}
+	return fields
+}
+
+func normalizeSavedSearchObjectBoolValues(data []byte) ([]byte, error) {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, err
+	}
+
+	for key := range savedSearchObjectBoolFields() {
+		value, ok := raw[key]
+		if !ok {
+			continue
+		}
+		if parsed, matched := parseSplunkBoolJSON(value); matched {
+			if parsed {
+				raw[key] = json.RawMessage("true")
+			} else {
+				raw[key] = json.RawMessage("false")
+			}
+		}
+	}
+
+	return json.Marshal(raw)
+}
+
 type SavedSearchesResponse struct {
 	Entry    []SavedSearchesEntry `json:"entry"`
 	Messages []ErrorMessage       `json:"messages"`
@@ -196,4 +257,20 @@ type SavedSearchObject struct {
 	Search                                       string  `json:"search,omitempty" url:"search,omitempty"`
 	VSID                                         string  `json:"vsid,omitempty" url:"vsid,omitempty"`
 	WorkloadPool                                 string  `json:"workload_pool,omitempty" url:"workload_pool,omitempty"`
+}
+
+func (s *SavedSearchObject) UnmarshalJSON(data []byte) error {
+	normalized, err := normalizeSavedSearchObjectBoolValues(data)
+	if err != nil {
+		return err
+	}
+
+	type savedSearchObjectAlias SavedSearchObject
+	var alias savedSearchObjectAlias
+	if err := json.Unmarshal(normalized, &alias); err != nil {
+		return err
+	}
+
+	*s = SavedSearchObject(alias)
+	return nil
 }
