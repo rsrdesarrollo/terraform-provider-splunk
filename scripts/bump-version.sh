@@ -50,6 +50,7 @@ git tag -a "$NEW_TAG" -m "Release $NEW_VERSION"
 echo "Created tag: $NEW_TAG"
 
 # Push tag
+git push origin master
 git push origin "$NEW_TAG"
 echo "Pushed tag: $NEW_TAG"
 
