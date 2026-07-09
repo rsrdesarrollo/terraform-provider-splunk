@@ -3,8 +3,22 @@ name: test
 on:
   push:
     branches: [ master ]
+    paths:
+      - '**/*.go'
+      - '**/*.tf'
+      - 'Makefile'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/test.yml'
   pull_request:
     branches: [ master ]
+    paths:
+      - '**/*.go'
+      - '**/*.tf'
+      - 'Makefile'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/test.yml'
   workflow_dispatch:
 
 jobs:
