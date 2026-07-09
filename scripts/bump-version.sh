@@ -42,6 +42,9 @@ sed -i '' "1s/^/$CHANGELOG_ENTRY\n* \n\n/" CHANGELOG.md
 
 echo "Updated CHANGELOG.md"
 
+git add CHANGELOG.md
+git commit -m "bump version to $NEW_TAG, update changelog"
+
 # Create tag
 git tag -a "$NEW_TAG" -m "Release $NEW_VERSION"
 echo "Created tag: $NEW_TAG"
