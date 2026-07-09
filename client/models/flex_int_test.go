@@ -35,6 +35,40 @@ func TestFlexInt_UnmarshalJSON(t *testing.T) {
 	}
 }
 
+func TestFlexBool_UnmarshalJSON(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    FlexBool
+		wantErr bool
+	}{
+		{"string 1", `"1"`, true, false},
+		{"string 0", `"0"`, false, false},
+		{"string true", `"true"`, true, false},
+		{"string false", `"false"`, false, false},
+		{"bare int 1", `1`, true, false},
+		{"bare int 0", `0`, false, false},
+		{"bool true", `true`, true, false},
+		{"bool false", `false`, false, false},
+		{"invalid string", `"abc"`, false, true},
+		{"invalid int", `2`, false, true},
+		{"null", `null`, false, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var f FlexBool
+			err := json.Unmarshal([]byte(tt.input), &f)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("UnmarshalJSON(%s) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+			}
+			if !tt.wantErr && f != tt.want {
+				t.Errorf("UnmarshalJSON(%s) = %t, want %t", tt.input, f, tt.want)
+			}
+		})
+	}
+}
+
 // TestSavedSearchObject_CloudBooleanFields verifies that SavedSearchObject
 // correctly deserialises the boolean values Splunk Cloud returns for
 // integer fields that Splunk Enterprise returns as string-encoded integers.
@@ -78,8 +112,8 @@ func TestSavedSearchObject_CloudBooleanFields(t *testing.T) {
 	if obj.ActionSnowEventParamSeverity != 0 {
 		t.Errorf("ActionSnowEventParamSeverity: got %d, want 0", obj.ActionSnowEventParamSeverity)
 	}
-	if obj.ActionHttpalertParamVerifySslCertificate != 1 {
-		t.Errorf("ActionHttpalertParamVerifySslCertificate: got %d, want 1", obj.ActionHttpalertParamVerifySslCertificate)
+	if obj.ActionHttpalertParamVerifySslCertificate != true {
+		t.Errorf("ActionHttpalertParamVerifySslCertificate: got %t, want true", obj.ActionHttpalertParamVerifySslCertificate)
 	}
 }
 
@@ -123,7 +157,7 @@ func TestSavedSearchObject_EnterpriseStringFields(t *testing.T) {
 	if obj.ActionSnowEventParamSeverity != 3 {
 		t.Errorf("ActionSnowEventParamSeverity: got %d, want 3", obj.ActionSnowEventParamSeverity)
 	}
-	if obj.ActionHttpalertParamVerifySslCertificate != 1 {
-		t.Errorf("ActionHttpalertParamVerifySslCertificate: got %d, want 1", obj.ActionHttpalertParamVerifySslCertificate)
+	if obj.ActionHttpalertParamVerifySslCertificate != true {
+		t.Errorf("ActionHttpalertParamVerifySslCertificate: got %t, want true", obj.ActionHttpalertParamVerifySslCertificate)
 	}
 }

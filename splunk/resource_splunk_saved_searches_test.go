@@ -394,7 +394,7 @@ resource "splunk_saved_searches" "test" {
 	action_httpalert_param_custom_headers = "Authorization:Bearer token123,Content-Type:application/json"
 	action_httpalert_param_payload = "{\"alert\": \"$name$\", \"severity\": \"high\"}"
 	action_httpalert_param_qs_params = "source=splunk&env=prod"
-	action_httpalert_param_verify_ssl_certificate = 1
+	action_httpalert_param_verify_ssl_certificate = true
 	alert_comparator    = "greater than"
 	alert_digest_mode   = true
 	alert_expires       = "30d"
@@ -775,7 +775,7 @@ func TestAccSplunkSavedSearches(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_custom_headers", "Authorization:Bearer token123,Content-Type:application/json"),
 					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_payload", "{\"alert\": \"$name$\", \"severity\": \"high\"}"),
 					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_qs_params", "source=splunk&env=prod"),
-					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_verify_ssl_certificate", "1"),
+					resource.TestCheckResourceAttr(resourceName, "action_httpalert_param_verify_ssl_certificate", "true"),
 					resource.TestCheckResourceAttr(resourceName, "alert_comparator", "greater than"),
 					resource.TestCheckResourceAttr(resourceName, "alert_digest_mode", "true"),
 					resource.TestCheckResourceAttr(resourceName, "alert_expires", "30d"),
