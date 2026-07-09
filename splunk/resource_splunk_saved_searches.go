@@ -866,7 +866,7 @@ func savedSearches() *schema.Resource {
 				Description: "Query string parameters for the HTTP alert action in key=value format, separated by &.",
 			},
 			"action_httpalert_param_verify_ssl_certificate": {
-				Type:        schema.TypeBool,
+				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
 				Description: "Whether to verify SSL certificate for the HTTP alert action.",
