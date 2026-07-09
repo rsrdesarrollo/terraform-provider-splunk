@@ -1,20 +1,34 @@
+## 1.5.3
+* Fix: release pipeline pins provider binary and artifact names to `terraform-provider-splunk` so installs work with registry address `splunk/splunk` (v1.5.2 release artifacts used incorrect names after the GitHub repo rename)
+
+## 1.5.2
+* Fix: saved search `action_email_include_*`, `action_email_send_csv`, and `action_snow_event_param_severity` handle boolean JSON from Splunk Cloud API responses
+* Support for namespaced REST import of saved searches and data ui views
+* Fix: URL-encode saved search and dashboard names in read, update, delete, and ACL API calls
+
 ## 1.5.1
-* 
+* Fix: generic_acl app ACL updates on Splunk Cloud
 
 ## 1.5.0
-* 
+* New resource: `splunk_saved_event_types` for managing saved event types knowledge objects.
+* Fix: saved search `action_email_include_*` fields (results_link, view_link, search, trigger, trigger_time) — removed omitempty from URL parameters so value 0 is sent to Splunk and can be set in config
+* Change: saved search `action_email_include_results_link` and `action_email_include_view_link` now default to 1 to match Splunk savedsearches.conf; removed Computed so defaults apply
+* Fix: HEC token list uses GET /services/data/inputs/http so tokens are found after create.
+* Fix: `splunk_generic_acl` ACL GET for Splunk Cloud vs Enterprise; add provider `acl_get_mode` / env `SPLUNK_ACL_GET_MODE` (`enterprise` default, or `cloud` when required).
 
-## 1.4.39
-* 
+## 1.4.36
+* Fix: saved search action_email_include_results_link handles 0 value 
+* Fix: saved search action_email_include_view_link handles 0 value
 
-## 1.4.38
-* 
+## 1.4.35
+* Fix: lookup_table_file - handle nil values in file_contents by converting to empty strings before JSON marshaling
+* Fix: lookup_table_file - properly URL-encode form parameters in Create/Read/Update operations
 
-## 1.4.37
-* Support for HTTP alert action fields in saved_searches
+## 1.4.34
+* Support for Slack alert params in saved_Searches
 
 ## 1.4.33
-* Support for better_webhook action fields in saved_searches
+* Support for Victorops params in saved_Searches
 
 ## 1.4.32
 * Support for Log Event action fields in saved_searches

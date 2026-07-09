@@ -9,6 +9,19 @@ import (
 	"github.com/rsrdesarrollo/terraform-provider-splunk/client/models"
 )
 
+// ensureGenericACLQueryContext sets owner, app, and sharing when they are empty (splunk_generic_acl read only).
+func ensureGenericACLQueryContext(acl *models.ACLObject) {
+	if acl.Owner == "" {
+		acl.Owner = "nobody"
+	}
+	if acl.App == "" {
+		acl.App = "search"
+	}
+	if acl.Sharing == "" {
+		acl.Sharing = "app"
+	}
+}
+
 func genericAcl() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
@@ -38,13 +51,13 @@ func genericAclCreate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("unable to parse path %s into resource and name parts", path)
 	}
 
-	aclObject := &models.ACLObject{}
+	var aclObject *models.ACLObject
 	if r, ok := d.GetOk("acl"); ok {
 		aclObject = getACLConfig(r.([]interface{}))
 	} else {
-		aclObject.App = "search"
-		aclObject.Owner = "nobody"
+		aclObject = getACLConfig(nil)
 	}
+	ensureGenericACLQueryContext(aclObject)
 
 	err := (*provider.Client).UpdateAcl(aclObject.Owner, aclObject.App, name, aclObject, resources...)
 	if err != nil {
@@ -67,8 +80,9 @@ func genericAclRead(d *schema.ResourceData, meta interface{}) error {
 
 	r := d.Get("acl")
 	aclObject := getACLConfig(r.([]interface{}))
+	ensureGenericACLQueryContext(aclObject)
 
-	resp, err := (*provider.Client).GetAcl(aclObject.Owner, aclObject.App, name, resources...)
+	resp, err := (*provider.Client).GetAcl(aclObject.Owner, aclObject.App, name, aclObject.Sharing, resources...)
 	if err != nil {
 		return err
 	}

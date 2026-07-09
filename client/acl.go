@@ -2,27 +2,51 @@ package client
 
 import (
 	"fmt"
-	"log"
+	"io"
 	"net/http"
-	"net/http/httputil"
+	"net/url"
 	"strings"
 
 	"github.com/google/go-querystring/query"
 	"github.com/rsrdesarrollo/terraform-provider-splunk/client/models"
 )
 
+const ACLGetModeCloud = "cloud"
+
+func (client *Client) getAclHTTP(endpoint url.URL) (*http.Response, error) {
+	req, err := client.NewRequest(http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.Do(req)
+}
+
 // https://docs.splunk.com/Documentation/Splunk/8.0.4/RESTUM/RESTusing#Access_Control_List
-func (client *Client) GetAcl(owner, app, name string, resources ...string) (*http.Response, error) {
-	resourcePath := []string{"servicesNS", owner, app}
-	resourcePath = append(resourcePath, resources...)
-	resourcePath = append(resourcePath, name, "acl")
-	endpoint := client.BuildSplunkURL(nil, resourcePath...)
-	resp, err := client.Get(endpoint)
+func (client *Client) GetAcl(owner, app, name, sharing string, resources ...string) (*http.Response, error) {
+	var q url.Values
+	if strings.EqualFold(strings.TrimSpace(client.ACLGetMode), ACLGetModeCloud) {
+		q = url.Values{}
+		if owner != "" {
+			q.Set("owner", owner)
+		}
+		if sharing != "" {
+			q.Set("sharing", sharing)
+		}
+	}
+	endpoint := client.buildAclEndpoint(q, owner, app, name, resources...)
+	resp, err := client.getAclHTTP(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("GET failed for endpoint %s: %s", endpoint.Path, err)
 	}
-
-	return resp, nil
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
+		return resp, nil
+	}
+	body, readErr := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if readErr != nil {
+		return nil, readErr
+	}
+	return nil, fmt.Errorf("%s: %s", resp.Status, string(body))
 }
 
 func (client *Client) ResourcesAndNameForPath(path string) (resources []string, name string, ok bool) {
@@ -46,39 +70,73 @@ func (client *Client) ResourcesAndNameForPath(path string) (resources []string, 
 }
 
 func (client *Client) UpdateAcl(owner, app, name string, acl *models.ACLObject, resources ...string) error {
-	values, err := query.Values(&acl)
-	if err != nil {
-		return err
-	}
-	// remove app from url values during POST
-	values.Del("app")
-	values.Del("perms[read]")
-	values.Del("perms[write]")
-	// Flatten []string
-	values.Set("perms.read", strings.Join(acl.Perms.Read, ","))
-	values.Set("perms.write", strings.Join(acl.Perms.Write, ","))
-	// Adding resources
-	resourcePath := []string{"servicesNS", owner, app}
-	resourcePath = append(resourcePath, resources...)
-	resourcePath = append(resourcePath, name, "acl")
-	endpoint := client.BuildSplunkURL(nil, resourcePath...)
-	resp, err := client.Post(endpoint, values)
-	requestBody, _ := httputil.DumpRequest(resp.Request, false)
-	if err != nil {
-		return fmt.Errorf("GET failed for endpoint %s: %s", endpoint.Path, err)
-	}
+	endpoint := client.buildAclEndpoint(nil, owner, app, name, resources...)
+	isCloud := strings.EqualFold(strings.TrimSpace(client.ACLGetMode), ACLGetModeCloud)
+	readPerms := strings.Join(acl.Perms.Read, ",")
+	writePerms := strings.Join(acl.Perms.Write, ",")
 
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	if isCloud {
+		values := url.Values{}
+		if owner != "" {
+			values.Set("owner", owner)
+		}
+		if acl.Sharing != "" {
+			values.Set("sharing", acl.Sharing)
+		}
+		values.Set("perms.read", readPerms)
+		values.Set("perms.write", writePerms)
+
+		// Splunk Cloud app ACL updates require a raw form-encoded POST body here; the
+		// generic client.Post/object-encoding path can return 200 OK without persisting
+		// the ACL change.
+		req, reqErr := client.NewRequest(http.MethodPost, endpoint.String(), strings.NewReader(values.Encode()))
+		if reqErr != nil {
+			return fmt.Errorf("POST failed for endpoint %s: %s", endpoint.Path, reqErr)
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		resp, err = client.Do(req)
+	} else {
+		values, valuesErr := query.Values(&acl)
+		if valuesErr != nil {
+			return valuesErr
+		}
+		values.Del("app")
+		values.Del("perms[read]")
+		values.Del("perms[write]")
+		values.Set("perms.read", readPerms)
+		values.Set("perms.write", writePerms)
+		resp, err = client.Post(endpoint, values)
+	}
+	if err != nil {
+		return fmt.Errorf("POST failed for endpoint %s: %s", endpoint.Path, err)
+	}
 	defer resp.Body.Close()
 
-	respBody, error := httputil.DumpResponse(resp, true)
-	if error != nil {
-		log.Printf("[ERROR] Error occured during acl creation %s", error)
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("POST failed for endpoint %s: %s", endpoint.Path, resp.Status)
 	}
 
-	log.Printf("[DEBUG] Request object coming acl is: %s and body: %s", string(requestBody), string(values.Encode()))
-	log.Printf("[DEBUG] Response object returned from acl creation: %s", string(respBody))
-
 	return nil
+}
+
+func (client *Client) buildAclEndpoint(queryValues url.Values, owner, app, name string, resources ...string) url.URL {
+	resourcePath := []string{"servicesNS", owner, app}
+	resourcePath = append(resourcePath, resources...)
+	endpoint := client.BuildSplunkURLWithEscapedPathPart(queryValues, name, resourcePath...)
+	rawPath := endpoint.RawPath
+	if rawPath == "" {
+		rawPath = endpoint.EscapedPath()
+	}
+	endpoint.Path = appendURLPathPart(endpoint.Path, "acl")
+	endpoint.RawPath = appendURLPathPart(rawPath, "acl")
+
+	return endpoint
 }
 
 func (client *Client) Move(owner, app, name string, acl *models.ACLObject, resources ...string) error {

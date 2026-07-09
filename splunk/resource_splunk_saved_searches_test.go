@@ -3,6 +3,7 @@ package splunk
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"testing"
@@ -69,6 +70,19 @@ resource "splunk_saved_searches" "test" {
 }
 `
 
+const savedSearchesNamespacedImport = `
+resource "splunk_saved_searches" "test" {
+    name          = "Test Namespaced Import"
+    search        = "index=main"
+    cron_schedule = "*/5 * * * *"
+    acl {
+      owner   = "admin"
+      sharing = "app"
+      app     = "search"
+    }
+}
+`
+
 const newSavedSearchesBracket = `
 resource "splunk_saved_searches" "test" {
     name = "[Test New Alert]"
@@ -85,6 +99,40 @@ resource "splunk_saved_searches" "test" {
     action_email_subject = "Splunk Alert: $name$"
     action_email_to = "splunk@splunk.com"
     action_email_track_alert = true
+    dispatch_earliest_time = "rt-15m"
+    dispatch_latest_time = "rt-0m"
+    dispatch_index_earliest = "-10m"
+    dispatch_index_latest = "-5m"
+    cron_schedule = "*/5 * * * *"
+    acl {
+      owner = "admin"
+      sharing = "app"
+      app = "launcher"
+    }
+}
+`
+
+// savedSearchesEmailIncludeLinksZero sets action_email_include_results_link and
+// action_email_include_view_link to 0 to verify they are sent to the API and
+// returned on read (and thus appear in savedsearches.conf).
+const savedSearchesEmailIncludeLinksZero = `
+resource "splunk_saved_searches" "test" {
+    name = "Test Email Include Links Zero"
+    search = "index=main"
+    actions = "email"
+    action_email_include_results_link = 0
+    action_email_include_view_link = 0
+    action_email_include_search = 0
+    action_email_include_trigger = 1
+    action_email_format = "table"
+    action_email_max_time = "5m"
+    action_email_max_results = 10
+    action_email_send_csv = 1
+    action_email_send_results = false
+    action_email_subject = "Splunk Alert: $name$"
+    action_email_to = "splunk@splunk.com"
+    action_email_track_alert = true
+    alert_track = true
     dispatch_earliest_time = "rt-15m"
     dispatch_latest_time = "rt-0m"
     dispatch_index_earliest = "-10m"
@@ -195,6 +243,78 @@ resource "splunk_saved_searches" "test" {
 	realtime_schedule   = true
 	search              = "index=main level=error"
 }
+
+`
+const newSavedSearchesSlackAppAlertIntegration = `
+resource "splunk_saved_searches" "test" {
+	name = "Test Slack App Alert"
+	actions = "slack_app_alert"
+	action_slack_app_alert_integration_param_auto_join_channel = "1"
+	action_slack_app_alert_integration_param_bot_username = "SplunkBot"
+	action_slack_app_alert_integration_param_channel = "channel"
+	action_slack_app_alert_integration_param_emoji = ":splunk:"
+	action_slack_app_alert_integration_param_message = "error message"
+	alert_comparator    = "greater than"
+	alert_digest_mode   = true
+	alert_expires       = "30d"
+	alert_threshold     = "0"
+	alert_type          = "number of events"
+	cron_schedule       = "*/1 * * * *"
+	disabled            = false
+	is_scheduled        = true
+	is_visible          = true
+	realtime_schedule   = true
+	search              = "index=main level=error"
+}
+`
+
+const newSavedSearchesVictorops = `
+resource "splunk_saved_searches" "test" {
+	name = "Test Victorops Alert"
+	actions = "victorops"
+	action_victorops_param_message_type = "CRITICAL"
+	action_victorops_param_monitoring_tool = "test"
+	action_victorops_param_entity_id = "test"
+	action_victorops_param_state_message = "error message"
+	action_victorops_param_record_id = "12345ab"
+	action_victorops_param_routing_key_override = "ops"
+	action_victorops_param_enable_recovery = "1"
+	action_victorops_param_poll_interval = "5"
+	action_victorops_param_inactive_polls = "10"
+	alert_comparator    = "greater than"
+	alert_digest_mode   = true
+	alert_expires       = "30d"
+	alert_threshold     = "0"
+	alert_type          = "number of events"
+	cron_schedule       = "*/1 * * * *"
+	disabled            = false
+	is_scheduled        = true
+	is_visible          = true
+	realtime_schedule   = true
+	search              = "index=main level=error"
+}
+`
+
+const newSavedSearchesBetterWebhook = `
+resource "splunk_saved_searches" "test" {
+	name = "Test BetterWebhook Alert"
+	actions = "better_webhook"
+	action_better_webhook_param_url = "https://example.com/webhook"
+	action_better_webhook_param_body_format = "{'alert': '$$app$$'}"
+	action_better_webhook_param_credential = "better_webhooks:test:"
+	action_better_webhook_param_credentials = "test"
+	alert_comparator    = "greater than"
+	alert_digest_mode   = true
+	alert_expires       = "30d"
+	alert_threshold     = "0"
+	alert_type          = "number of events"
+	cron_schedule       = "*/1 * * * *"
+	disabled            = false
+	is_scheduled        = true
+	is_visible          = true
+	realtime_schedule   = true
+	search              = "index=main level=error"
+}
 `
 
 const newSavedSearchesPagerduty = `
@@ -250,27 +370,6 @@ resource "splunk_saved_searches" "test" {
 	name = "Test Webhook Alert"
 	actions = "webhook"
 	action_webhook_param_url = "http://localhost:1234"
-	alert_comparator    = "greater than"
-	alert_digest_mode   = true
-	alert_expires       = "30d"
-	alert_threshold     = "0"
-	alert_type          = "number of events"
-	cron_schedule       = "*/1 * * * *"
-	disabled            = false
-	is_scheduled        = true
-	is_visible          = true
-	realtime_schedule   = true
-	search              = "index=main level=error"
-}
-`
-
-const newSavedSearchesBetterWebhook = `
-resource "splunk_saved_searches" "test" {
-	name = "Test Better Webhook Alert"
-	actions = "better_webhook"
-	action_better_webhook_param_url = "https://webhook.example.com/endpoint"
-	action_better_webhook_param_credential = "test_credential"
-	action_better_webhook_param_body_format = "{\"sid\": $$sid$$, \"results_link\": $$results_link$$}"
 	alert_comparator    = "greater than"
 	alert_digest_mode   = true
 	alert_expires       = "30d"
@@ -538,6 +637,78 @@ func TestAccSplunkSavedSearches(t *testing.T) {
 				),
 			},
 			{
+				Config: newSavedSearchesSlackAppAlertIntegration,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "Test Slack App Alert"),
+					resource.TestCheckResourceAttr(resourceName, "actions", "slack_app_alert"),
+					resource.TestCheckResourceAttr(resourceName, "action_slack_app_alert_integration_param_auto_join_channel", "1"),
+					resource.TestCheckResourceAttr(resourceName, "action_slack_app_alert_integration_param_bot_username", "SplunkBot"),
+					resource.TestCheckResourceAttr(resourceName, "action_slack_app_alert_integration_param_channel", "channel"),
+					resource.TestCheckResourceAttr(resourceName, "action_slack_app_alert_integration_param_emoji", ":splunk:"),
+					resource.TestCheckResourceAttr(resourceName, "action_slack_app_alert_integration_param_message", "error message"),
+					resource.TestCheckResourceAttr(resourceName, "alert_comparator", "greater than"),
+					resource.TestCheckResourceAttr(resourceName, "alert_digest_mode", "true"),
+					resource.TestCheckResourceAttr(resourceName, "alert_expires", "30d"),
+					resource.TestCheckResourceAttr(resourceName, "alert_threshold", "0"),
+					resource.TestCheckResourceAttr(resourceName, "alert_type", "number of events"),
+					resource.TestCheckResourceAttr(resourceName, "cron_schedule", "*/1 * * * *"),
+					resource.TestCheckResourceAttr(resourceName, "disabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "is_scheduled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "is_visible", "true"),
+					resource.TestCheckResourceAttr(resourceName, "realtime_schedule", "true"),
+					resource.TestCheckResourceAttr(resourceName, "search", "index=main level=error"),
+				),
+			},
+			{
+				Config: newSavedSearchesVictorops,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "Test Victorops Alert"),
+					resource.TestCheckResourceAttr(resourceName, "actions", "victorops"),
+					resource.TestCheckResourceAttr(resourceName, "action_victorops_param_message_type", "CRITICAL"),
+					resource.TestCheckResourceAttr(resourceName, "action_victorops_param_monitoring_tool", "test"),
+					resource.TestCheckResourceAttr(resourceName, "action_victorops_param_entity_id", "test"),
+					resource.TestCheckResourceAttr(resourceName, "action_victorops_param_state_message", "error message"),
+					resource.TestCheckResourceAttr(resourceName, "action_victorops_param_record_id", "12345ab"),
+					resource.TestCheckResourceAttr(resourceName, "action_victorops_param_routing_key_override", "ops"),
+					resource.TestCheckResourceAttr(resourceName, "action_victorops_param_enable_recovery", "1"),
+					resource.TestCheckResourceAttr(resourceName, "action_victorops_param_poll_interval", "5"),
+					resource.TestCheckResourceAttr(resourceName, "action_victorops_param_inactive_polls", "10"),
+					resource.TestCheckResourceAttr(resourceName, "alert_comparator", "greater than"),
+					resource.TestCheckResourceAttr(resourceName, "alert_digest_mode", "true"),
+					resource.TestCheckResourceAttr(resourceName, "alert_expires", "30d"),
+					resource.TestCheckResourceAttr(resourceName, "alert_threshold", "0"),
+					resource.TestCheckResourceAttr(resourceName, "alert_type", "number of events"),
+					resource.TestCheckResourceAttr(resourceName, "cron_schedule", "*/1 * * * *"),
+					resource.TestCheckResourceAttr(resourceName, "disabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "is_scheduled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "is_visible", "true"),
+					resource.TestCheckResourceAttr(resourceName, "realtime_schedule", "true"),
+					resource.TestCheckResourceAttr(resourceName, "search", "index=main level=error"),
+				),
+			},
+			{
+				Config: newSavedSearchesBetterWebhook,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "Test BetterWebhook Alert"),
+					resource.TestCheckResourceAttr(resourceName, "actions", "better_webhook"),
+					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_url", "https://example.com/webhook"),
+					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_body_format", "{'alert': '$$app$$'}"),
+					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_credential", "better_webhooks:test:"),
+					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_credentials", "test"),
+					resource.TestCheckResourceAttr(resourceName, "alert_comparator", "greater than"),
+					resource.TestCheckResourceAttr(resourceName, "alert_digest_mode", "true"),
+					resource.TestCheckResourceAttr(resourceName, "alert_expires", "30d"),
+					resource.TestCheckResourceAttr(resourceName, "alert_threshold", "0"),
+					resource.TestCheckResourceAttr(resourceName, "alert_type", "number of events"),
+					resource.TestCheckResourceAttr(resourceName, "cron_schedule", "*/1 * * * *"),
+					resource.TestCheckResourceAttr(resourceName, "disabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "is_scheduled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "is_visible", "true"),
+					resource.TestCheckResourceAttr(resourceName, "realtime_schedule", "true"),
+					resource.TestCheckResourceAttr(resourceName, "search", "index=main level=error"),
+				),
+			},
+			{
 				Config: newSavedSearchesPagerduty,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "Test Pagerduty Alert"),
@@ -685,6 +856,62 @@ func TestAccSplunkSavedSearches(t *testing.T) {
 				ResourceName:      "splunk_saved_searches.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccSplunkSavedSearchesNamespacedImport(t *testing.T) {
+	resourceName := "splunk_saved_searches.test"
+	importID := "/servicesNS/admin/search/saved/searches/" + url.PathEscape("Test Namespaced Import")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccSplunkSavedSearchesDestroyResources,
+		Steps: []resource.TestStep{
+			{
+				Config: savedSearchesNamespacedImport,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "Test Namespaced Import"),
+					resource.TestCheckResourceAttr(resourceName, "search", "index=main"),
+					resource.TestCheckResourceAttr(resourceName, "cron_schedule", "*/5 * * * *"),
+					resource.TestCheckResourceAttr(resourceName, "acl.0.owner", "admin"),
+					resource.TestCheckResourceAttr(resourceName, "acl.0.app", "search"),
+					resource.TestCheckResourceAttr(resourceName, "acl.0.sharing", "app"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateId:     importID,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// TestAccSplunkSavedSearchesEmailIncludeLinksZero verifies that setting
+// action_email_include_results_link and action_email_include_view_link to 0
+// sends them to the API and they are returned on read (and appear in savedsearches.conf).
+func TestAccSplunkSavedSearchesEmailIncludeLinksZero(t *testing.T) {
+	resourceName := "splunk_saved_searches.test"
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccSplunkSavedSearchesDestroyResources,
+		Steps: []resource.TestStep{
+			{
+				Config: savedSearchesEmailIncludeLinksZero,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "Test Email Include Links Zero"),
+					resource.TestCheckResourceAttr(resourceName, "action_email_include_results_link", "0"),
+					resource.TestCheckResourceAttr(resourceName, "action_email_include_view_link", "0"),
+				),
 			},
 		},
 	})
