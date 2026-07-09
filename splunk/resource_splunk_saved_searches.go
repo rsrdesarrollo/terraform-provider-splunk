@@ -761,7 +761,6 @@ func savedSearches() *schema.Resource {
 			"action_victorops_param_message_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "CRITICAL",
 				Description: "Valid values: (INFO | WARNING | CRITICAL | ACKNOLEGEMENT | RECOVERY)" +
 					"Specifies the type of message to send to VictorOps. Defaults to CRITICAL.",
 			},
@@ -795,7 +794,6 @@ func savedSearches() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "Specifies whether to enable recovery polling to send RECOVERY messages when the alert condition is no longer met. [1|0]",
-				Default:     "0",
 			},
 			"action_victorops_param_poll_interval": {
 				Type:        schema.TypeString,
