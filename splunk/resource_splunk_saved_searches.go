@@ -2155,7 +2155,7 @@ func getSavedSearchesConfig(d *schema.ResourceData) (savedSearchesObj *models.Sa
 		ActionHttpalertParamMethod:                         d.Get("action_httpalert_param_method").(string),
 		ActionHttpalertParamPayload:                        d.Get("action_httpalert_param_payload").(string),
 		ActionHttpalertParamQsParams:                       d.Get("action_httpalert_param_qs_params").(string),
-		ActionHttpalertParamVerifySslCertificate:           d.Get("action_httpalert_param_verify_ssl_certificate").(bool),
+		ActionHttpalertParamVerifySslCertificate:           models.FlexInt(d.Get("action_httpalert_param_verify_ssl_certificate").(int)),
 		AlertComparator:                                    d.Get("alert_comparator").(string),
 		AlertCondition:                                     d.Get("alert_condition").(string),
 		AlertDigestMode:                                    d.Get("alert_digest_mode").(bool),

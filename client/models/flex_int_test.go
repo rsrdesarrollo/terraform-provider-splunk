@@ -48,7 +48,8 @@ func TestSavedSearchObject_CloudBooleanFields(t *testing.T) {
 		"action.email.include.trigger_time": true,
 		"action.email.include.view_link": false,
 		"action.email.sendcsv": false,
-		"action.snow_event.param.severity": false
+		"action.snow_event.param.severity": false,
+		"action.httpalert.param.verify_ssl_certificate": true
 	}`
 
 	var obj SavedSearchObject
@@ -77,6 +78,9 @@ func TestSavedSearchObject_CloudBooleanFields(t *testing.T) {
 	if obj.ActionSnowEventParamSeverity != 0 {
 		t.Errorf("ActionSnowEventParamSeverity: got %d, want 0", obj.ActionSnowEventParamSeverity)
 	}
+	if obj.ActionHttpalertParamVerifySslCertificate != 1 {
+		t.Errorf("ActionHttpalertParamVerifySslCertificate: got %d, want 1", obj.ActionHttpalertParamVerifySslCertificate)
+	}
 }
 
 // TestSavedSearchObject_EnterpriseStringFields verifies that SavedSearchObject
@@ -89,7 +93,8 @@ func TestSavedSearchObject_EnterpriseStringFields(t *testing.T) {
 		"action.email.include.trigger_time": "1",
 		"action.email.include.view_link": "1",
 		"action.email.sendcsv": "0",
-		"action.snow_event.param.severity": "3"
+		"action.snow_event.param.severity": "3",
+		"action.httpalert.param.verify_ssl_certificate": "1"
 	}`
 
 	var obj SavedSearchObject
@@ -117,5 +122,8 @@ func TestSavedSearchObject_EnterpriseStringFields(t *testing.T) {
 	}
 	if obj.ActionSnowEventParamSeverity != 3 {
 		t.Errorf("ActionSnowEventParamSeverity: got %d, want 3", obj.ActionSnowEventParamSeverity)
+	}
+	if obj.ActionHttpalertParamVerifySslCertificate != 1 {
+		t.Errorf("ActionHttpalertParamVerifySslCertificate: got %d, want 1", obj.ActionHttpalertParamVerifySslCertificate)
 	}
 }
