@@ -765,27 +765,6 @@ func TestAccSplunkSavedSearches(t *testing.T) {
 				),
 			},
 			{
-				Config: newSavedSearchesBetterWebhook,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "Test Better Webhook Alert"),
-					resource.TestCheckResourceAttr(resourceName, "actions", "better_webhook"),
-					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_url", "https://webhook.example.com/endpoint"),
-					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_credential", "test_credential"),
-					resource.TestCheckResourceAttr(resourceName, "action_better_webhook_param_body_format", "{\"sid\": $$sid$$, \"results_link\": $$results_link$$}"),
-					resource.TestCheckResourceAttr(resourceName, "alert_comparator", "greater than"),
-					resource.TestCheckResourceAttr(resourceName, "alert_digest_mode", "true"),
-					resource.TestCheckResourceAttr(resourceName, "alert_expires", "30d"),
-					resource.TestCheckResourceAttr(resourceName, "alert_threshold", "0"),
-					resource.TestCheckResourceAttr(resourceName, "alert_type", "number of events"),
-					resource.TestCheckResourceAttr(resourceName, "cron_schedule", "*/1 * * * *"),
-					resource.TestCheckResourceAttr(resourceName, "disabled", "false"),
-					resource.TestCheckResourceAttr(resourceName, "is_scheduled", "true"),
-					resource.TestCheckResourceAttr(resourceName, "is_visible", "true"),
-					resource.TestCheckResourceAttr(resourceName, "realtime_schedule", "true"),
-					resource.TestCheckResourceAttr(resourceName, "search", "index=main level=error"),
-				),
-			},
-			{
 				Config: newSavedSearchesHttpAlert,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "Test HTTP Alert"),

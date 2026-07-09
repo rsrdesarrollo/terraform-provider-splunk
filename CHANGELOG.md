@@ -1,3 +1,6 @@
+## 1.6.0
+* 
+
 ## 1.5.3
 * Fix: release pipeline pins provider binary and artifact names to `terraform-provider-splunk` so installs work with registry address `splunk/splunk` (v1.5.2 release artifacts used incorrect names after the GitHub repo rename)
 
