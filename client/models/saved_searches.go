@@ -220,7 +220,7 @@ type SavedSearchObject struct {
 	ActionBetterWebhookParamBodyFormat                 string   `json:"action.better_webhook.param.body_format,omitempty" url:"action.better_webhook.param.body_format"`
 	ActionBetterWebhookParamCredential                 string   `json:"action.better_webhook.param.credential,omitempty" url:"action.better_webhook.param.credential"`
 	ActionBetterWebhookParamCredentials                string   `json:"action.better_webhook.param.credentials,omitempty" url:"action.better_webhook.param.credentials"`
-	ActionWebhookParamUrl                              string   `json:"action.webhook.param.url,omitempty" url:"action.webhook.param.url"`
+	ActionWebhookParamUrl                              string   `json:"action.webhook.param.url,omitempty" url:"action.webhook.param.url,omitempty"`
 	ActionHttpalertParamCredential                     string   `json:"action.httpalert.param.credential,omitempty" url:"action.httpalert.param.credential,omitempty"`
 	ActionHttpalertParamCustomHeaders                  string   `json:"action.httpalert.param.custom_headers,omitempty" url:"action.httpalert.param.custom_headers,omitempty"`
 	ActionHttpalertParamEndpoint                       string   `json:"action.httpalert.param.endpoint,omitempty" url:"action.httpalert.param.endpoint,omitempty"`

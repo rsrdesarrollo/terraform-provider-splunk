@@ -1,15 +1,24 @@
 package splunk
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
+	"sync"
 	"testing"
 
+	"github.com/google/go-querystring/query"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/rsrdesarrollo/terraform-provider-splunk/client"
+	"github.com/rsrdesarrollo/terraform-provider-splunk/client/models"
 )
 
 const newSavedSearches = `
@@ -937,5 +946,233 @@ func TestResourceExampleInstanceStateUpgradeV0(t *testing.T) {
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", expected, actual)
+	}
+}
+
+func TestSavedSearchesWebhookURLLifecycle(t *testing.T) {
+	t.Setenv("HTTPScheme", "https")
+	const field = "action_webhook_param_url"
+	const parameter = "action.webhook.param.url"
+	for _, mode := range []string{"omitted", "null"} {
+		for _, creation := range []struct {
+			name     string
+			url      string
+			explicit bool
+		}{
+			{name: "without URL"},
+			{name: "inherited URL", url: "https://example.com/inherited"},
+			{name: "explicit URL", url: "https://example.com/created", explicit: true},
+		} {
+			t.Run(mode+"/"+creation.name, func(t *testing.T) {
+				resource := savedSearches()
+				config := func(webhookURL string, managed bool, search string) *terraform.ResourceConfig {
+					raw := map[string]interface{}{
+						"name": "Webhook Test", "search": search, "actions": "webhook",
+					}
+					if managed {
+						raw[field] = webhookURL
+					} else if mode == "null" {
+						raw[field] = nil
+					}
+					return terraform.NewResourceConfigRaw(raw)
+				}
+				content := getSavedSearchesConfig(schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{
+					"name": "Webhook Test", "search": "index=main", "actions": "webhook",
+				}))
+				if !creation.explicit {
+					content.ActionWebhookParamUrl = creation.url
+				}
+				var mutex sync.Mutex
+				var posts []url.Values
+				var creates, updates int
+				const collection = "/servicesNS/nobody/search/saved/searches"
+				const item = collection + "/Webhook Test"
+				server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+					mutex.Lock()
+					defer mutex.Unlock()
+					w.Header().Set("Content-Type", "application/json")
+					switch {
+					case request.Method == http.MethodGet && request.URL.Path == item:
+						if err := json.NewEncoder(w).Encode(&models.SavedSearchesResponse{Entry: []models.SavedSearchesEntry{{
+							Name: "Webhook Test", Content: *content,
+							ACL: models.ACLObject{Owner: "nobody", App: "search", Sharing: "app"},
+						}}}); err != nil {
+							t.Error(err)
+						}
+					case request.Method == http.MethodPost && (request.URL.Path == collection || request.URL.Path == item):
+						body, err := io.ReadAll(request.Body)
+						if err != nil {
+							t.Error(err)
+							w.WriteHeader(http.StatusBadRequest)
+							return
+						}
+						form, err := url.ParseQuery(string(body))
+						if err != nil {
+							t.Error(err)
+							w.WriteHeader(http.StatusBadRequest)
+							return
+						}
+						posts = append(posts, form)
+						if request.URL.Path == collection {
+							creates++
+							if form.Get("name") != "Webhook Test" {
+								t.Error("missing saved search name in create request")
+							}
+						} else {
+							updates++
+						}
+						if values, ok := form[parameter]; ok {
+							content.ActionWebhookParamUrl = values[0]
+						}
+						content.Search = form.Get("search")
+						_, _ = w.Write([]byte(`{}`))
+					case request.Method == http.MethodPost && request.URL.Path == item+"/acl":
+						_, _ = w.Write([]byte(`{}`))
+					default:
+						t.Errorf("unexpected request: %s %s", request.Method, request.URL.Path)
+						w.WriteHeader(http.StatusBadRequest)
+					}
+				}))
+				defer server.Close()
+				backend, err := url.Parse(server.URL)
+				if err != nil {
+					t.Fatal(err)
+				}
+				apiClient, err := client.NewSplunkdClient("test", [2]string{}, backend.Host, "", server.Client())
+				if err != nil {
+					t.Fatal(err)
+				}
+				provider := &SplunkProvider{Client: apiClient}
+				var state *terraform.InstanceState
+				plan := func(configuration *terraform.ResourceConfig) *terraform.InstanceDiff {
+					t.Helper()
+					if _, errors := resource.Validate(configuration); len(errors) != 0 {
+						t.Fatalf("invalid configuration: %v", errors)
+					}
+					diff, err := resource.Diff(state, configuration, provider)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if state != nil && diff != nil && (diff.Destroy || diff.RequiresNew()) {
+						t.Fatal("webhook URL change must not destroy or replace the saved search")
+					}
+					return diff
+				}
+				converged := func(configuration *terraform.ResourceConfig) {
+					t.Helper()
+					if diff := plan(configuration); diff != nil && !diff.Empty() {
+						t.Fatalf("expected an empty plan, got %#v", diff.Attributes)
+					}
+				}
+				apply := func(configuration *terraform.ResourceConfig, wantURL, wantParameter string) {
+					t.Helper()
+					diff := plan(configuration)
+					if diff == nil || diff.Empty() {
+						t.Fatal("expected changes to apply")
+					}
+					state, err = resource.Apply(state, diff, provider)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if state.ID != "Webhook Test" || state.Attributes[field] != wantURL {
+						t.Fatalf("unexpected state: id=%q, URL=%q; want URL=%q", state.ID, state.Attributes[field], wantURL)
+					}
+					mutex.Lock()
+					post := posts[len(posts)-1]
+					gotURL := content.ActionWebhookParamUrl
+					mutex.Unlock()
+					values, present := post[parameter]
+					if present != (wantParameter != "") || post.Get(parameter) != wantParameter {
+						t.Fatalf("POST webhook parameter = %v (present=%v), want %q", values, present, wantParameter)
+					}
+					if gotURL != wantURL {
+						t.Fatalf("remote URL = %q, want %q", gotURL, wantURL)
+					}
+					converged(configuration)
+				}
+				remoteChange := func(webhookURL string) {
+					t.Helper()
+					mutex.Lock()
+					content.ActionWebhookParamUrl = webhookURL
+					mutex.Unlock()
+					state, err = resource.Refresh(state, provider)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if state.Attributes[field] != webhookURL {
+						t.Fatalf("refresh did not record remote URL %q", webhookURL)
+					}
+				}
+
+				initialParameter := ""
+				if creation.explicit {
+					initialParameter = creation.url
+				}
+				apply(config(creation.url, creation.explicit, "index=main"), creation.url, initialParameter)
+				unmanaged := config("", false, "index=main")
+				converged(unmanaged)
+				apply(config("", false, "index=updated"), creation.url, creation.url)
+				managed := config("https://example.com/first", true, "index=updated")
+				apply(managed, "https://example.com/first", "https://example.com/first")
+				managed = config("https://example.com/second", true, "index=updated")
+				apply(managed, "https://example.com/second", "https://example.com/second")
+				remoteChange("https://example.com/drift")
+				if diff := plan(managed).Attributes[field]; diff == nil || diff.NewComputed || diff.Old != "https://example.com/drift" || diff.New != "https://example.com/second" {
+					t.Fatalf("explicit URL must correct remote drift, got %#v", diff)
+				}
+				apply(managed, "https://example.com/second", "https://example.com/second")
+				unmanaged = config("", false, "index=updated")
+				converged(unmanaged)
+				remoteChange("https://example.com/unmanaged")
+				converged(unmanaged)
+				apply(config("", false, "index=other"), "https://example.com/unmanaged", "https://example.com/unmanaged")
+				apply(config("https://example.com/resumed", true, "index=other"), "https://example.com/resumed", "https://example.com/resumed")
+				mutex.Lock()
+				defer mutex.Unlock()
+				if creates != 1 || updates != 6 {
+					t.Fatalf("expected one create and six in-place updates, got %d creates and %d updates", creates, updates)
+				}
+			})
+		}
+	}
+}
+
+func TestSavedSearchesWebhookURLSerialization(t *testing.T) {
+	for _, webhookURL := range []string{"", "https://example.com/hook?first=1&second=2"} {
+		t.Run(webhookURL, func(t *testing.T) {
+			data := schema.TestResourceDataRaw(t, savedSearches().Schema, map[string]interface{}{
+				"name": "Webhook Test", "search": "index=main", "action_webhook_param_url": webhookURL,
+			})
+			object := getSavedSearchesConfig(data)
+			if object.ActionWebhookParamUrl != webhookURL {
+				t.Fatalf("expanded URL = %q, want %q", object.ActionWebhookParamUrl, webhookURL)
+			}
+			for _, input := range []interface{}{object, &object} {
+				values, err := query.Values(input)
+				if err != nil {
+					t.Fatal(err)
+				}
+				const parameter = "action.webhook.param.url"
+				_, present := values[parameter]
+				if present != (webhookURL != "") || values.Get(parameter) != webhookURL {
+					t.Fatalf("serialized URL = %q (present=%v), want %q", values.Get(parameter), present, webhookURL)
+				}
+			}
+		})
+	}
+}
+
+func TestSavedSearchesWebhookURLValidation(t *testing.T) {
+	for _, webhookURL := range []string{"https://example.com/hook", "http://example.com/hook", "ftp://example.com/hook", "example.com/hook", "https://example.com/has space"} {
+		t.Run(webhookURL, func(t *testing.T) {
+			configuration := terraform.NewResourceConfigRaw(map[string]interface{}{
+				"name": "Webhook Test", "search": "index=main", "action_webhook_param_url": webhookURL,
+			})
+			_, errors := savedSearches().Validate(configuration)
+			valid := (strings.HasPrefix(webhookURL, "https://") || strings.HasPrefix(webhookURL, "http://")) && !strings.Contains(webhookURL, " ")
+			if (len(errors) == 0) != valid {
+				t.Fatalf("URL %q: validation errors = %v, valid = %v", webhookURL, errors, valid)
+			}
+		})
 	}
 }

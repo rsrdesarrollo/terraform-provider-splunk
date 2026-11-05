@@ -158,7 +158,7 @@ This resource block supports the following arguments:
 - `action_better_webhook_param_body_format` - (Optional) Format of the body content. Valid values are json, xml, form-urlencoded, or raw
 - `action_better_webhook_param_credential` - (Optional) Name of the Splunk stored credential to use for authentication
 - `action_better_webhook_param_credentials` - (Optional) Use the credentials defined in the webhook URL
-- `action_webhook_param_url` - (Optional) URL to send the HTTP POST request to. Must be accessible from the Splunk server
+- `action_webhook_param_url` - (Optional, Computed) HTTP(S) URL to send the HTTP POST request to. Must be accessible from the Splunk server. An explicit URL is managed by Terraform, including correcting remote changes. Omitting this attribute or setting it to `null` preserves the remote URL and stops managing it; removing a previously configured URL does not clear it or recreate the alert. Updates to other attributes retain the URL read from Splunk. Creating a saved search without this attribute sends no webhook URL parameter and records the value returned by Splunk, if any. Set an explicit URL again to resume management. Omission and `null` are not a deletion mechanism; no `ignore_changes` is needed.
 - `actions` - (Optional) A comma-separated list of actions to enable. For example: rss,email
 - `alert_comparator` - (Optional) One of the following strings: greater than, less than, equal to, rises by, drops by, rises by perc, drops by percUsed with alert_threshold to trigger alert actions.
 - `alert_condition` - (Optional) Contains a conditional search that is evaluated against the results of the saved search. Defaults to an empty string.

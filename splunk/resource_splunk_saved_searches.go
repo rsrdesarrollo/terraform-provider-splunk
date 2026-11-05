@@ -830,7 +830,8 @@ func savedSearches() *schema.Resource {
 			"action_webhook_param_url": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Description:  "URL to send the HTTP POST request to. Must be accessible from the Splunk server.",
+				Computed:     true,
+				Description:  "URL to send the HTTP POST request to. Must be accessible from the Splunk server. When omitted or null, the remote URL is preserved rather than cleared.",
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^https?://[^\s]+$`), "Webhook URL is invalid"),
 			},
 			"action_httpalert_param_credential": {
