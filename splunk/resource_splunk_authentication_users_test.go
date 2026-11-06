@@ -66,6 +66,33 @@ func TestAccSplunkAuthenticationUsers(t *testing.T) {
 	})
 }
 
+const authenticationUserWithoutPasswordInput = `
+resource "splunk_authentication_users" "service" {
+  name  = "new-service-user"
+  roles = ["user"]
+}
+`
+
+func TestAccSplunkAuthenticationUsersWithoutPassword(t *testing.T) {
+	resourceName := "splunk_authentication_users.service"
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccSplunkAuthenticationUsersInputDestroyResources,
+		Steps: []resource.TestStep{
+			{
+				Config: authenticationUserWithoutPasswordInput,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "new-service-user"),
+					resource.TestCheckNoResourceAttr(resourceName, "password"),
+				),
+			},
+		},
+	})
+}
+
 func testAccSplunkAuthenticationUsersInputDestroyResources(s *terraform.State) error {
 	client, err := newTestClient()
 	if err != nil {
