@@ -20,7 +20,7 @@ This resource block supports the following arguments:
 * `default_app` - (Optional) User default app. Overrides the default app inherited from the user roles.
 * `email` - (Optional) User email address.
 * `force_change_pass` - Force user to change password indication
-* `password` - (Optional) User login password.
+* `password` - (Optional) User login password. If omitted, a random password is generated and not stored in the state.
 * `restart_background_jobs` - (Optional) Restart background search job that has not completed when Splunk restarts indication.
 * `realname` - (Optional) Full user name.
 * `roles` - (Optional) Role to assign to this user. At least one existing role is required.

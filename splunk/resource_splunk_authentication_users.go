@@ -1,6 +1,8 @@
 package splunk
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -42,7 +44,7 @@ func authenticationUsers() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Sensitive:   true,
-				Description: "User login password.",
+				Description: "User login password. If omitted, a random password is generated and not stored in the state.",
 			},
 			"realname": {
 				Type:        schema.TypeString,
@@ -87,6 +89,14 @@ func authenticationUsersCreate(d *schema.ResourceData, meta interface{}) error {
 	provider := meta.(*SplunkProvider)
 	name := d.Get("name").(string)
 	authenticationUserObj := getAuthenticationUserConfig(d)
+	if authenticationUserObj.Password == "" {
+		password, err := randomPassword()
+		if err != nil {
+			return err
+		}
+		authenticationUserObj.Password = password
+	}
+
 	err := (*provider.Client).CreateAuthenticationUser(name, authenticationUserObj)
 	if err != nil {
 		return err
@@ -231,4 +241,12 @@ func getAuthenticationUserByName(name string, httpResponse *http.Response) (Auth
 	}
 
 	return AuthenticationUserEntry, nil
+}
+
+func randomPassword() (string, error) {
+	b := make([]byte, 24)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b) + "Aa1!", nil
 }
